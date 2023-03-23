@@ -6,7 +6,7 @@
 ## The Idea
 This project aims at understanding the workings of the ARC task and how to
 potentially solve it using state-of-the-art deep learning methodology (neural networks).
-This repository will be iteratively edited with our progress over the coming months.
+This repository will be iteratively edited with our progress over the coming months. 
 
 ## Contact
 For further information on this project, please consult: luca.thoms@student.uva.nl
