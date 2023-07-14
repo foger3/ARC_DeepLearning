@@ -1,11 +1,11 @@
-# Solving the ARC task using Deep Learning
+# Solving ARC Visual Analogies with Neural Embeddings and Vector Arithmetic: A Generalized Method
 
 [![Python 3+7 ready](https://img.shields.io/badge/python-3.8%2B-yellowgreen.svg)](https://www.python.org/)
 
 ## Authors
 [Luca H. Thoms](https://github.com/foger3), [Hannes Rosenbusch](https://hannesrosenbusch.github.io/), [Karel A. Veldkamp](https://github.com/KarelVeldkamp) and [Claire E. Stevenson](https://modelingcreativity.org/people/) 
 
-## The Idea
+## Abstract
 Analogical reasoning derives information from known relations and generalizes this information to similar yet unfamiliar
 situations. One of the first generalized ways in which deep learning models were able to solve verbal analogies was through
 vector arithmetic of word embeddings, essentially relating words that were mapped to a vector space (e.g., king – man + woman
