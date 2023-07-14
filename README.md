@@ -1,6 +1,7 @@
 # Solving ARC Visual Analogies with Neural Embeddings and Vector Arithmetic: A Generalized Method
 
 [![Python 3+7 ready](https://img.shields.io/badge/python-3.8%2B-yellowgreen.svg)](https://www.python.org/)
+[![Licence](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
 ## Authors
 [Luca H. Thoms](https://github.com/foger3), [Hannes Rosenbusch](https://hannesrosenbusch.github.io/), [Karel A. Veldkamp](https://github.com/KarelVeldkamp) and [Claire E. Stevenson](https://modelingcreativity.org/people/) 
