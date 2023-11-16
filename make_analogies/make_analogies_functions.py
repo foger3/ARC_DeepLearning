@@ -65,6 +65,21 @@ def create_image_with_white_rectangle(coord: dict, img_size: int) -> np.array:
     return black_image
 
 
+def gravity(image: np.array, coord: dict, direction: str) -> np.array:
+    rec_height = coord["bottom"] - coord["top"]
+    rec_width = coord["right"] - coord["left"]
+    new_image = np.zeros((image.shape[0], image.shape[0]), dtype=np.uint8)
+    if direction == "down":
+        new_image[image.shape[0]-rec_height:image.shape[0], coord["left"]:coord["right"]] = 255
+    elif direction == "up":
+        new_image[0:rec_height,coord["left"]:coord["right"]] = 255
+    elif direction == "left":
+        new_image[coord["top"]:coord["bottom"],0:rec_width] = 255
+    elif direction == "right":
+        new_image[coord["top"]:coord["bottom"], image.shape[1]-rec_width:image.shape[1]] = 255
+    return new_image
+
+
 def invalid_matrix(matrix: np.array, height: int, width:int, number_rectangles: int) -> np.array:
     if matrix.shape != (height, width):
         return True #if wrong shape
