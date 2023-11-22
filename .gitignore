@@ -1,3 +1,8 @@
+#simple ARC files
+make_analogies/*
+!make_analogies/make_analogies.ipynb
+!make_analogies/make_analogies_functions.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
