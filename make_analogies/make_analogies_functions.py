@@ -2,6 +2,58 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
 import itertools
+import torch
+import torch.nn as nn
+
+class FullyConnectedNN(nn.Module):
+    def __init__(self):
+        super(FullyConnectedNN, self).__init__()
+        self.flatten = nn.Flatten()  
+        self.fc1 = nn.Linear(5 * 10 * 10, 200) 
+        self.relu1 = nn.ReLU()  
+        self.fc2 = nn.Linear(200, 200) 
+        self.relu2 = nn.ReLU() 
+        self.fc3 = nn.Linear(200, 200) 
+        self.relu3 = nn.ReLU() 
+        self.fc4 = nn.Linear(200, 10 * 10) 
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = self.flatten(x)
+        x = self.fc1(x)
+        x = self.relu1(x)
+        x = self.fc2(x)
+        x = self.relu2(x)
+        x = self.fc3(x)
+        x = self.relu3(x)
+        x = self.fc4(x)
+        x = self.sigmoid(x)
+        return x.view(-1, 10, 10)
+    
+
+def get_test_metrics(x_test, y_test, model, criterion, method_index_test, analogy_breakdown):
+    model.eval()
+    with torch.no_grad():
+        y_pred = model(x_test)
+        test_loss = criterion(y_pred, y_test).item()
+        y_pred = torch.round(y_pred)
+        elements_equal = np.equal(y_test, y_pred)
+        rows_equal_all = [torch.all(rows_equal.flatten()) for rows_equal in elements_equal]
+        percentage_solved_total = (np.sum(rows_equal_all) / y_test.shape[0]) * 100
+        if not analogy_breakdown:
+            return {"test loss": test_loss, "percent_solved": percentage_solved_total}
+        else:
+            analogy_metrics = {}
+            method_names = np.unique(method_index_test)
+            for method in method_names:
+                y_pred = model(x_test[method_index_test == method])
+                y_pred = torch.round(y_pred)
+                elements_equal = np.equal(y_test[method_index_test == method], y_pred)
+                rows_equal_all = [torch.all(rows_equal.flatten()) for rows_equal in elements_equal]
+                percentage_same = (np.sum(rows_equal_all) / y_test[method_index_test == method].shape[0]) * 100
+                analogy_metrics[method] = percentage_same
+            return {"test loss": test_loss, "percent_solved": percentage_solved_total} | analogy_metrics
+
 
 
 def paint_corner(image: np.array, furthest = True) -> np.array:
