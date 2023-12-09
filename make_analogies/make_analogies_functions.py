@@ -33,7 +33,7 @@ class FullyConnectedNN(nn.Module):
 
 def get_test_metrics(x_test, y_test, model, criterion, method_index_test, analogy_breakdown):
     model.eval()
-    with torch.no_grad():
+    with torch.inference_mode():
         y_pred = model(x_test)
         test_loss = criterion(y_pred, y_test).item()
         y_pred = torch.round(y_pred)
@@ -55,7 +55,7 @@ def get_test_metrics(x_test, y_test, model, criterion, method_index_test, analog
             return {"test loss": test_loss, "percent_solved": percentage_solved_total} | analogy_metrics
 
 
-
+#works
 def paint_corner(image: np.array, furthest = True) -> np.array:
     height, width = image.shape
     all_coords = list(itertools.product(list(range(9)), repeat=2))
@@ -88,7 +88,7 @@ def paint_corner(image: np.array, furthest = True) -> np.array:
         new_image[corner[0], corner[1]] = 255
     return new_image
 
-
+#works
 def paint_edge(image: np.array, furthest = True) -> np.array:
     height, width = image.shape
     white_pixels = np.where(image == 255)
@@ -113,33 +113,56 @@ def paint_edge(image: np.array, furthest = True) -> np.array:
     return new_image
 
 
-def create_image(img_size: int, shape: str) -> np.array:
+def create_image(img_size: int, shape: str, **coord) -> np.array:
     new_image = np.zeros((img_size, img_size), dtype=np.uint8)
     if shape == "L":
         min_size = 2
+    elif shape == "O":
+        min_size = 3
     else:
         min_size = 1
-    top_left = {"top": np.random.randint(1, img_size-min_size), "left": np.random.randint(1, img_size-min_size)}
-    bottom_right = {"bottom": np.random.randint(top_left["top"] + min_size, img_size), "right": np.random.randint(top_left["left"] + min_size, img_size)}
-    coord = top_left | bottom_right
-    new_image[coord["top"]:coord["bottom"], coord["left"]:coord["right"]] = 255
-    if shape == "rectangle":
+    if not coord:
+        top_left = {"top": np.random.randint(1, img_size-min_size), "left": np.random.randint(1, img_size-min_size)}
+        bottom_right = {"bottom": np.random.randint(top_left["top"] + min_size, img_size), "right": np.random.randint(top_left["left"] + min_size, img_size)}
+        coord = top_left | bottom_right
+    if shape in ["I", "O", "L"]:
+        new_image[coord["top"]:coord["bottom"], coord["left"]:coord["right"]] = 255
+    if shape == "I":
         pass
+    elif shape == "O":
+        if "inner_top" not in coord:
+            inner_top_left = {"inner_top": np.random.randint(top_left["top"] + 1, coord["bottom"] - 1),
+                                "inner_left": np.random.randint(top_left["left"] + 1, coord["right"] - 1)}
+            inner_bottom_right = {"inner_bottom": np.random.randint(inner_top_left["inner_top"] + 1, coord["bottom"]),
+                                    "inner_right": np.random.randint(inner_top_left["inner_left"] + 1, coord["right"])}
+            coord = coord | inner_top_left | inner_bottom_right
+        new_image[coord["inner_top"]:coord["inner_bottom"], coord["inner_left"]:coord["inner_right"]] = 0
     elif shape == "L":
-        rec_width = coord["right"] - coord["left"]
-        rec_height = coord["bottom"] - coord["top"]
-        keep_left = np.random.choice([True, False])
-        keep_bottom = np.random.choice([True, False])
-        side_trimming = np.random.choice(range(1, rec_width))
-        vertical_trimming = np.random.choice(range(1, rec_height))
-        if keep_left and keep_bottom:
-            new_image[coord["top"]:(coord["bottom"] - vertical_trimming), (coord["left"]+side_trimming):coord["right"]] = 0
-        elif keep_left and (not keep_bottom):
-            new_image[(coord["top"]+ vertical_trimming):coord["bottom"], (coord["left"]+side_trimming):coord["right"]] = 0
-        elif (not keep_left) and keep_bottom:
-            new_image[coord["top"]:(coord["bottom"] - vertical_trimming), coord["left"]:(coord["right"] - side_trimming)] = 0
+        if "keep_left" not in coord:
+            rec_width = coord["right"] - coord["left"]
+            rec_height = coord["bottom"] - coord["top"]
+            coord["keep_left"] = np.random.choice([True, False])
+            coord["keep_bottom"] = np.random.choice([True, False])
+            coord["side_trimming"] = np.random.choice(range(1, rec_width))
+            coord["vertical_trimming"] = np.random.choice(range(1, rec_height))
+        if coord["keep_left"] and coord["keep_bottom"]:
+            new_image[coord["top"]:(coord["bottom"] - coord["vertical_trimming"]), (coord["left"]+coord["side_trimming"]):coord["right"]] = 0
+        elif coord["keep_left"] and (not coord["keep_bottom"]):
+            new_image[(coord["top"]+ coord["vertical_trimming"]):coord["bottom"], (coord["left"]+coord["side_trimming"]):coord["right"]] = 0
+        elif (not coord["keep_left"]) and coord["keep_bottom"]:
+            new_image[coord["top"]:(coord["bottom"] - coord["vertical_trimming"]), coord["left"]:(coord["right"] - coord["side_trimming"])] = 0
         else:
-            new_image[(coord["top"]+ vertical_trimming):coord["bottom"], coord["left"]:(coord["right"] - side_trimming)] = 0
+            new_image[(coord["top"]+ coord["vertical_trimming"]):coord["bottom"], coord["left"]:(coord["right"] - coord["side_trimming"])] = 0
+    elif shape == "T":
+        if "t_connection_x" not in coord:
+            coord["t_connection_x"] = np.random.randint(1, 9)  # Random x coordinate between 1 and 8
+            coord["t_connection_y"] = np.random.randint(0, 9) 
+            coord["t_width"] = np.random.randint(1, np.min([10-coord["t_connection_x"], coord["t_connection_x"]])+ 1)
+            coord["t_height"] = np.random.randint(1, 10-coord["t_connection_y"])
+            coord["t_rotation_angle_degrees"] = np.random.choice([0,1,2,3])
+        new_image[coord["t_connection_y"], coord["t_connection_x"] - coord["t_width"]: coord["t_connection_x"]+coord["t_width"]+1] = 255  # Vertical line of T
+        new_image[coord["t_connection_y"]:coord["t_connection_y"] + coord["t_height"]+1, coord["t_connection_x"]] = 255
+        new_image = np.rot90(new_image, k=coord["t_rotation_angle_degrees"])
     else:
         raise ValueError(f"Illegal shape: {shape}")
     return new_image
@@ -216,7 +239,6 @@ def move(image: np.array, horizontal_movement: int, vertical_movement: int) -> n
         new_image[r, c] = 255
     return new_image
 
-
 def grow(image: np.array, top_add: int, bottom_add: int, left_add: int, right_add: int) -> np.array:
     new_image = np.copy(image)
     for row in range(image.shape[0]):
@@ -236,7 +258,6 @@ def grow(image: np.array, top_add: int, bottom_add: int, left_add: int, right_ad
     return new_image
 
 
-
 def rotate_image(image: np.array, rotation_angle_degrees: int) -> np.array: #90, 180, 270
     if rotation_angle_degrees not in [90, 180, 270]:
         raise ValueError("Rotation angle must be 90, 180, or 270 degrees.")
@@ -248,7 +269,7 @@ def rotate_image(image: np.array, rotation_angle_degrees: int) -> np.array: #90,
         rotated_image = np.rot90(image, k=3)
     return rotated_image
 
-#L approved
+
 def draw_shadows(image: np.array, reverse: bool) -> np.array:
     new_image = np.zeros((image.shape[0], image.shape[1]), dtype=np.uint8)
     white_pixels = np.where(image == 255)
@@ -269,8 +290,8 @@ def draw_shadows(image: np.array, reverse: bool) -> np.array:
         new_image[image.shape[0]-1, coord["left"]:coord["right"]+1] = 255
     return new_image
 
-#L approved
-def stretch_rectangle(image: np.array) -> np.array:
+
+def stretch(image: np.array) -> np.array:
     white_pixels = np.where(image == 255)
     coord = {"bottom": max(white_pixels[0]), "top": min(white_pixels[0]), "left": min(white_pixels[1]), "right": max(white_pixels[1])}
     rectangle_height = coord["bottom"] - coord["top"]
