@@ -31,6 +31,8 @@ class FullyConnectedNN(nn.Module):
         return x.view(-1, 10, 10)
     
 
+    
+
 def get_test_metrics(x_test, y_test, model, criterion, method_index_test, analogy_breakdown):
     model.eval()
     with torch.inference_mode():
@@ -125,6 +127,8 @@ def create_image(img_size: int, shape: str, **coord) -> np.array:
         top_left = {"top": np.random.randint(1, img_size-min_size), "left": np.random.randint(1, img_size-min_size)}
         bottom_right = {"bottom": np.random.randint(top_left["top"] + min_size, img_size), "right": np.random.randint(top_left["left"] + min_size, img_size)}
         coord = top_left | bottom_right
+    if "t_rotation_angle_degrees" not in coord:
+        coord["t_rotation_angle_degrees"] = np.random.choice([0,1,2,3])
     if shape in ["I", "O", "L"]:
         new_image[coord["top"]:coord["bottom"], coord["left"]:coord["right"]] = 255
     if shape == "I":
@@ -153,18 +157,18 @@ def create_image(img_size: int, shape: str, **coord) -> np.array:
             new_image[coord["top"]:(coord["bottom"] - coord["vertical_trimming"]), coord["left"]:(coord["right"] - coord["side_trimming"])] = 0
         else:
             new_image[(coord["top"]+ coord["vertical_trimming"]):coord["bottom"], coord["left"]:(coord["right"] - coord["side_trimming"])] = 0
+
     elif shape == "T":
         if "t_connection_x" not in coord:
-            coord["t_connection_x"] = np.random.randint(1, 9)  # Random x coordinate between 1 and 8
-            coord["t_connection_y"] = np.random.randint(0, 9) 
-            coord["t_width"] = np.random.randint(1, np.min([10-coord["t_connection_x"], coord["t_connection_x"]])+ 1)
-            coord["t_height"] = np.random.randint(1, 10-coord["t_connection_y"])
-            coord["t_rotation_angle_degrees"] = np.random.choice([0,1,2,3])
+            coord["t_connection_x"] = np.random.randint(2, 8)  # Random x coordinate between 1 and 8
+            coord["t_connection_y"] = np.random.randint(2, 8) 
+            coord["t_width"] = np.random.randint(1, np.min([9-coord["t_connection_x"], coord["t_connection_x"]])+ 1)
+            coord["t_height"] = np.random.randint(1, 9-coord["t_connection_y"])
         new_image[coord["t_connection_y"], coord["t_connection_x"] - coord["t_width"]: coord["t_connection_x"]+coord["t_width"]+1] = 255  # Vertical line of T
         new_image[coord["t_connection_y"]:coord["t_connection_y"] + coord["t_height"]+1, coord["t_connection_x"]] = 255
-        new_image = np.rot90(new_image, k=coord["t_rotation_angle_degrees"])
     else:
         raise ValueError(f"Illegal shape: {shape}")
+    new_image = np.rot90(new_image, k=coord["t_rotation_angle_degrees"])
     return new_image
 
 
@@ -209,15 +213,19 @@ def invert_colors(image: np.array) -> np.array:
     return inverted_image
 
 
-def plot_double_trio(double_trio: np.array) -> np.array:
+def plot_double_trio(double_trio: np.array, colormax = 1) -> np.array:
     plt.figure(figsize=(12, 4))
     fig, axs = plt.subplots(2, 3)
     ind = 0
     for i in range(2):
         for j in range(3):
-            axs[i, j].imshow(double_trio[ind], cmap='gray')  # Replace 'imshow' with your preferred plotting function
+            axs[i, j].imshow(double_trio[ind], cmap='gray', vmin = 0, vmax = colormax)  # Replace 'imshow' with your preferred plotting function
             if ind == 5:
                 axs[i, j].set_title(f'TARGET')
+            elif i == 0:
+                axs[i, j].set_title(f'IMG {j+1}A')
+            elif i == 1:
+                axs[i, j].set_title(f'IMG {j+1}B')
             ind += 1
     plt.show()
 
